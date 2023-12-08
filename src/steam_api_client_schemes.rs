@@ -1,9 +1,5 @@
-use std::collections::HashMap;
-
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
-use time::OffsetDateTime;
-
 
 #[derive(Serialize, Deserialize)]
 pub struct GetCollectionInfo {
@@ -68,15 +64,15 @@ pub struct GetPublishedFileDetailsResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Publishedfiledetail {
     pub publishedfileid: String,
-    pub result: i64,
+    pub result: u64,
     pub creator: String,
     #[serde(rename = "creator_app_id")]
-    pub creator_app_id: i64,
+    pub creator_app_id: u64,
     #[serde(rename = "consumer_app_id")]
-    pub consumer_app_id: i64,
+    pub consumer_app_id: u64,
     pub filename: String,
     #[serde(rename = "file_size")]
-    pub file_size: i64,
+    pub file_size: u64,
     #[serde(rename = "file_url")]
     pub file_url: String,
     #[serde(rename = "hcontent_file")]
@@ -88,20 +84,20 @@ pub struct Publishedfiledetail {
     pub title: String,
     pub description: String,
     #[serde(rename = "time_created")]
-    pub time_created: i64,
+    pub time_created: u64,
     #[serde(rename = "time_updated")]
-    pub time_updated: i64,
-    pub visibility: i64,
-    pub banned: i64,
+    pub time_updated: u64,
+    pub visibility: u64,
+    pub banned: u64,
     #[serde(rename = "ban_reason")]
     pub ban_reason: String,
-    pub subscriptions: i64,
-    pub favorited: i64,
+    pub subscriptions: u64,
+    pub favorited: u64,
     #[serde(rename = "lifetime_subscriptions")]
-    pub lifetime_subscriptions: i64,
+    pub lifetime_subscriptions: u64,
     #[serde(rename = "lifetime_favorited")]
-    pub lifetime_favorited: i64,
-    pub views: i64,
+    pub lifetime_favorited: u64,
+    pub views: u64,
     pub tags: Vec<Tag>,
 }
 

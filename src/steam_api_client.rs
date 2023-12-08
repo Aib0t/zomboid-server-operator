@@ -1,35 +1,27 @@
 use log::{debug, error, warn};
-use reqwest::{header, Client};
-
+use reqwest::Client;
 use crate::steam_api_client_schemes::*;
-use anyhow::{anyhow, Result};
 use std::time::Duration;
-use std::{env, sync::Arc};
-use tokio::time::sleep;
-use tokio::{sync::RwLock, task::JoinHandle};
-
-use crate::utils::env_parse;
-
 use regex::Regex;
 
 #[derive(Default, Clone, Debug)]
 pub struct ModData {
     pub mod_id: u64,
     pub mod_name: Vec<String>,
-    pub map_name: Vec<String>
+    pub map_name: Vec<String>,
+    pub last_updated: u64 //change to DateTime?
 }
 
 pub struct SteamApiClient {
     http_client: Client,
     steam_api_url: String,
-    steam_api_key: String,
+    //steam_api_key: String,
+    //Is it even required?
 }
 
 impl SteamApiClient {
     //it's really not, but will do the trick
-    pub fn new() -> Self {
-        //steam_api_key: String
-        //Is it even required?
+    pub fn new() -> Self {        
 
         let http_client = Client::builder()
             .https_only(true)
@@ -39,11 +31,11 @@ impl SteamApiClient {
             .unwrap();
 
         let steam_api_url = "https://api.steampowered.com".to_owned();
-        let steam_api_key = "DUMMY".to_owned();
+        //let steam_api_key = "DUMMY".to_owned();
         Self {
             http_client,
             steam_api_url,
-            steam_api_key,
+            //steam_api_key,
         }
     }
 
@@ -119,8 +111,8 @@ impl SteamApiClient {
 
 
         //move to lazy once_cell
-        let mod_name_re = Regex::new(r"(?m)Mod\sID:\s(?P<mod_name>[ a-zA-Z0-9_-]*)[\\r\\n]{0,}").unwrap();
-        let map_folder_name_re = Regex::new(r"(?m)Map\sFolder:\s(?P<map_folder>[ a-zA-Z0-9_-]*)[\\r\\n]{0,}").unwrap();
+        let mod_name_re = Regex::new(r"(?m)Mod\sID:\s(?P<mod_name>[ a-zA-Z0-9()\[\]_\-\(\).,]+)(\\r\\n)*").unwrap();
+        let map_folder_name_re = Regex::new(r"(?m)Map\sFolder:\s(?P<map_folder>[ a-zA-Z0-9()\[\]_\-\(\).,]+)(\\r\\n)*").unwrap();
 
         let url = format!(
             "{}/ISteamRemoteStorage/GetPublishedFileDetails/v1/",
@@ -138,7 +130,7 @@ impl SteamApiClient {
         for batch_num in 0..batches {
             debug!("Processing batch {}",batch_num);
 
-            let mut mod_ids_to_parse: Vec<u64> = vec![];
+            let mod_ids_to_parse: Vec<u64>;
 
             if mod_ids.len() >= batch_size {
                 mod_ids_to_parse = mod_ids.drain(0..batch_size).collect::<Vec<u64>>();
@@ -175,14 +167,17 @@ impl SteamApiClient {
 
             for full_mod_data in mods_data_response.response.publishedfiledetails {
 
+                if full_mod_data.result != 1 {
+                    error!("Failed to get data for mod {}, skipping mod",full_mod_data.publishedfileid);
+                    continue;
+                }
+
                 let mod_name_result = mod_name_re.captures_iter(&full_mod_data.description);
                 let map_folder_name_result = map_folder_name_re.captures_iter(&full_mod_data.description);
 
-                //dbg!(&mod_name_result);
-                //dbg!(&map_folder_name_result);
-
                 let mut mod_data = ModData::default();  
                 mod_data.mod_id = full_mod_data.publishedfileid.parse::<u64>().unwrap();
+                mod_data.last_updated = full_mod_data.time_updated;
 
                 // if &mod_name_result.count() == 0 {
                 //     
